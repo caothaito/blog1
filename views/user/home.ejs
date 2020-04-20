@@ -1,0 +1,178 @@
+<%- include('header'); -%>
+
+
+  <div class="container">
+    <div class="row">
+      <div class="col ">
+        <h1 class="my-4">Page Heading
+          <small>Secondary Text</small>
+        </h1>
+        <div id="posts">
+        <% posts.forEach(function(post){ %>
+        <div class="card col" id="post-<%= post._id %>">
+          <div class="card-body">
+            <div class="row">
+              <div class="col-lg-6">
+                <a href="#">
+                  <% if( post.image) {%>
+                    <img class="img-fluid rounded" src="<%= post.image %>" alt="">
+                    <% } else { %>
+                      <img class="img-fluid rounded" src="http://placehold.it/750x300">
+                    <% } %>
+              </a>
+              </div>
+              <div class="col lg-6">
+                <h2 class="card-title">
+                  <%= post.title%>
+                </h2>
+                <p class="card-text">
+                  <%= post.content %>
+                </p>
+                <a href="posts/<%= post._id %>" class="btn btn-primary">Read More &rarr;</a>
+              </div>
+              </div>
+            </div>
+            <div class="card-footer text-muted">
+              Posted on January 1, 2017 by
+              <a href="#">Start Bootstrap</a>
+            </div>
+        </div>
+         <% }) %>
+        </div>
+      </div>
+      
+
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        <button type="button" class="btn btn-info" onclick="getPrevious();">
+          Previous
+        </button>
+      </div>
+
+      <div class="col-md-6">
+        <button type="button" class="btn btn-info" style="float: right" onclick="getNext()">
+          Next
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+
+  <script>
+
+    var start = 0 ;
+    var limit = "<%= postLimit %>"
+    //phan tran
+    function getNext() {
+       start = parseInt(start) + parseInt(limit); // next oJ tiếp theo k bị lặp laaawji các OJ
+      console.log(start, "đây là start")
+      $.ajax({
+        url:'/get-posts/' + start + "/" + limit,
+        method:"GET",
+        success:function(response) {
+          console.log(response)
+
+          renderPosts(response)
+        }
+      })
+    }
+
+    function getPrevious() {
+      start = parseInt(start) - parseInt(limit);; // lui lai oJ tiếp theo k bị lặp laaawji các OJ
+
+      $.ajax({
+        url:'/get-posts/' + start + "/" + limit,
+        method:"GET",
+        success:function(response) {
+          console.log(response)
+
+          renderPosts(response)
+        }
+      })
+    }
+
+
+
+    function renderPosts(posts) {
+      if(posts.length > 0){
+        var html ="";
+
+        for(var a = 0; a < posts.length; a++){
+
+         html += ' <div class="card col" id="post-' + posts[a]._id + '"> '
+          html += '    <div class="card-body">'
+            html += '     <div class="row">'
+              html += '       <div class="col-lg-6">'
+                html += '        <a href="#">'
+                    html += '          <img class="img-fluid rounded" src=" ' + posts[a].image + '" alt="">'
+                      html += '      </a>'
+              html += '      </div>'
+              html += '     <div class="col lg-6">'
+                html += '       <h2 class="card-title">'
+                  html +=  posts[a].title 
+                  html += '      </h2>'
+                  html += '       <p class="card-text">'
+                    html +=    posts[a].content 
+                    html += '       </p>'
+                html += '      <a href="posts/'+ posts[a]._id +'" class="btn btn-primary">Read More &rarr;</a>'
+                html += '     </div>'
+                html += '     </div>'
+                html += '    </div>'
+                html += '     <div class="card-footer text-muted">'
+                  html += '      Posted on January 1, 2017 by'
+          html += '      <a href="#">Start Bootstrap</a>'
+          html += '       </div>'
+          html += '  </div>'
+
+        }
+
+        $("#posts").html(html)
+      }
+    }
+
+
+
+
+    var socket = io();
+
+      socket.on("delete_post", function (replyId){
+        document.getElementById( "post-" + replyId).remove();
+      })
+
+    
+    socket.on('new_post', function (formData){
+      // console.log(formData)
+      var html = "";
+      html += '<div class="card col"> ';
+        html += '    <div class="card-body">';
+          html += '   <div class="row">';
+            html += '    <div class="col-lg-6">';
+              html += '      <a href="#">';
+                html += ' <img class="img-fluid rounded" src="' + formData.image +'" alt="">';
+                html += '  </a>';
+                html += '  </div>';
+                html += '   <div class="col lg-6">';
+                  html += '   <h2 class="card-title">';
+                    html +=         formData.title ;
+                    html += '     </h2>';
+                    html += '     <p class="card-text">';
+                      html +=       formData.content ;
+                      html += '     </p>';
+                      html += '       <a href="posts/' + formData._id + ' " class="btn btn-primary">Read More &rarr;</a>';
+                      html += '     </div>';
+                      html += '     </div>';
+                      html += '   </div>';
+                      html += '   <div class="card-footer text-muted">';
+                        html += '    Posted on January 1, 2017 by';
+                        html += '   <a href="#">Start Bootstrap</a>';
+                        html += '   </div>';
+                        html += ' </div>';
+        
+          $('#posts').prepend(html);
+    })
+  </script>
+
+  <!-- Footer -->
+  <%- include('footer'); -%>

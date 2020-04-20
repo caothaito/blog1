@@ -1,0 +1,14 @@
+<%- include('header'); -%>
+<div id="layoutSidenav_content">
+    <div class="container">
+        <form method="POST" action="/admin/save_settings">
+            <div class="form-group">
+                <label for="">Post limit</label>
+                <input name="post_limit" class="form-control" value="<%= post_limit %>">
+            </div>
+
+            <input type="submit" class="btn btn-info" value="Save settings">
+        </form>
+    </div>
+</div>
+<%- include('footer'); -%>

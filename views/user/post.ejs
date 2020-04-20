@@ -1,0 +1,288 @@
+<%- include('header'); -%>
+
+
+<div class="container">
+
+  <div class="row">
+
+    <div class="col-lg-8">
+
+      <h1 class="mt-4">
+        <%= post.title%>
+      </h1>
+      <hr>
+      <p>Posted on January 1, 2019 at 12:00 PM</p>
+
+      <hr>
+
+      <% if( post.image) {%>
+      <img class="img-fluid rounded" src="<%= post.image %>" alt="">
+      <% } else { %>
+      <img class="img-fluid rounded" src="http://placehold.it/900x300">
+      <% } %>
+
+      <hr>
+
+      <p class="lead">
+        <%= post.content %>
+      </p>
+
+      <hr>
+
+      <!-- Comments Form -->
+
+      <div class="card my-4">
+        <h5 class="card-header">Leave a Comment:</h5>
+        <div class="card-body">
+          <form method="POST" onsubmit="return doComment(this)">
+
+            <input type="hidden" id="post_id" name="post_id" value="<%= post._id %>">
+            
+
+            <div class="form-group">
+              <input class="form-control" name="username">
+            </div>
+
+            <div class="form-group">
+              <input class="form-control" placeholder="Email"
+               name="email">
+            </div>
+
+            <div class="form-group">
+              <textarea class="form-control" name="comment" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </form>
+        </div>
+      </div>
+      <!-- ajax -->
+      <script>
+
+        var socket = io();
+
+
+        function doComment(form) {
+          var formData = { username: form.username.value,
+                           comment: form.comment.value, 
+                           post_id: form.post_id.value,
+                           email: form.email.value,
+                           }
+          $.ajax({
+            url: "/do-comment",
+            method: "POST",
+            data: formData,
+            success: function (response) {
+              formData._id = response._id;
+              socket.emit("new_comment", formData);
+              alert(response.text)
+            }
+          })
+          return false;
+        }
+
+
+        socket.on("new_comment", function (comment) {
+          // console.log(comment);
+          if (comment.post_id != $('#post_id').val()){
+            return;
+          }
+          var html = "";
+          html +='   <div id="comments">'
+          html += '<div class="media mb-4"> ';
+            html += '<img class="d-flex mr-3 rounded-circle" src="http://placehold.it/50x50" alt="">'
+            html += '     <div class="media-body">';
+              html += '     <h5 class="mt-0">';
+                html +=  comment.username 
+                html += '   </h5>';
+                html +=  comment.comment 
+                html += ' </div>';
+                html += '   </div>';
+                html += '   </div>';
+                $('#comments').prepend(html);
+              });
+
+
+              socket.on('new_reply', function (reply) {
+                // console.log(reply);
+                var html = ""; 
+              html +='  <div id="comments">';
+                html +='     <div class="media mb-4">';
+                  html +='     <img class="d-flex mr-3 rounded-circle" src="http://placehold.it/50x50" alt="">';
+                  html +='       <div class="media-body">';
+                    html +='        <h5 class="mt-0">';
+                      html +=          reply.name ;
+                          html +='    </5>';
+                          html += reply.reply;
+                          html +='     </div>';   
+                          html +='   </div>';
+                          html +='    </div> ';
+                $('#replies-' + reply.comment_id).append(html)
+              })
+             
+
+
+              function doReply (form) {
+                var formData = {
+                  post_id: form.post_id.value,
+                  comment_id: form.comment_id.value,
+                  name: form.name.value,
+                  reply: form.reply.value,
+                  comment_email: form.comment_email.value
+                };
+                $.ajax({
+                  url: "/do-reply",
+                  method:"POST",
+                  data: formData,
+                  success: function( response ) {
+                    formData._id = response._id;
+                    socket.emit("new_reply", formData);
+
+                    form.name.value = "";
+                    form.reply.value = "";
+
+                    alert(response.text)
+                  }
+                })
+                return false;
+              }
+      </script>
+
+      <!-- Single Comment -->
+      <div id="comments"></div>
+      <% if(post.comments) {%>
+      <!-- tat ca cac cmt dieu hoat dong -->
+      <% post.comments = post.comments.reverse() %>
+      <!-- day cmt moi len hang dau -->
+      <% post.comments.forEach(function (comment) { %>
+      <div id="comments">
+        <div class="media mb-4">
+          <img class="d-flex mr-3 rounded-circle" src="http://placehold.it/50x50" alt="">
+          <div class="media-body">
+            <h5 class="mt-0">
+              <%= comment.username %>
+            </h5>
+            <%= comment.comment %>
+
+            <div id="replies-<%= comment._id %>" class="">
+            <!-- phần này hiện thị reply mỗi cmt -->
+            <% if (comment.replies) { %>
+              <% comment.replies.forEach(function (reply) { %>
+                <div id="comments">
+                <div class="media mb-4">
+                  <img class="d-flex mr-3 rounded-circle" src="http://placehold.it/50x50" alt="">
+                  <div class="media-body">
+                    <h5 class="mt-0">
+                      <%= reply.name %>
+                    </5>
+                    <%= reply.reply %>
+                    </div>   
+                </div>
+              </div>
+                <% }) %>
+              <% } %>
+            </div>
+
+            <!-- trả lời comment -->
+            <div class="col-md-3">
+              <form onsubmit=" return doReply(this)" >
+                <input  name="post_id" type="hidden" value="<%= post._id %>">
+                <input  name="comment_id" type="hidden" value="<%= comment._id %>">
+                <input  name="comment_email" type="hidden" value="<%= comment.email %>">
+
+                <div class="form-group">
+                  <input  name="name" class="form-control" placeholder="Enter name" >
+                </div>
+
+                <div class="form-group">
+                  <textarea  name="reply" class="form-control" placeholder="Enter reply" ></textarea>
+                </div>
+
+                <input type="submit" class="btn btn-info btn-sm" value="Reply">
+
+              </form>
+            </div>
+
+          </div>
+        </div>
+      <% }) %>
+      <% } %>
+    </div>
+  </div>
+
+    <!-- Sidebar Widgets Column -->
+    <div class="col-md-4">
+
+      <!-- Search Widget -->
+      <div class="card my-4">
+        <h5 class="card-header">Search</h5>
+        <div class="card-body">
+          <div class="input-group">
+            <input type="text" class="form-control" placeholder="Search for...">
+            <span class="input-group-btn">
+              <button class="btn btn-secondary" type="button">Go!</button>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories Widget -->
+      <div class="card my-4">
+        <h5 class="card-header">Categories</h5>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-lg-6">
+              <ul class="list-unstyled mb-0">
+                <li>
+                  <a href="#">Web Design</a>
+                </li>
+                <li>
+                  <a href="#">HTML</a>
+                </li>
+                <li>
+                  <a href="#">Freebies</a>
+                </li>
+              </ul>
+            </div>
+            <div class="col-lg-6">
+              <ul class="list-unstyled mb-0">
+                <li>
+                  <a href="#">JavaScript</a>
+                </li>
+                <li>
+                  <a href="#">CSS</a>
+                </li>
+                <li>
+                  <a href="#">Tutorials</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Widget -->
+      <div class="card my-4">
+        <h5 class="card-header">Side Widget</h5>
+        <div class="card-body">
+          You can put anything you want inside of these side widgets. They are easy to use, and feature the new
+          Bootstrap 4 card containers!
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+  <!-- /.row -->
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- Footer -->
+<%- include('footer'); -%>
